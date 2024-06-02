@@ -14,6 +14,8 @@ import {
   RawAccount,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
+import TelegramBot, { Message } from 'node-telegram-bot-api';
+
 import { Liquidity, LiquidityPoolKeysV4, LiquidityStateV4, Percent, Token, TokenAmount } from '@raydium-io/raydium-sdk';
 import { MarketCache, PoolCache, SnipeListCache } from './cache';
 import { PoolFilters } from './filters';
@@ -53,6 +55,12 @@ export interface BotConfig {
   filterCheckDuration: number;
   consecutiveMatchCount: number;
 }
+interface TelegramMessage {
+  chat: {
+    id: number;
+  };
+  text?: string;
+}
 
 export class Bot {
   private readonly poolFilters: PoolFilters;
@@ -66,6 +74,8 @@ export class Bot {
   public readonly isWarp: boolean = false;
   public readonly isJito: boolean = false;
 
+  private readonly telegramBot: TelegramBot; // Declare telegramBot property
+
   constructor(
     private readonly connection: Connection,
     private readonly marketStorage: MarketCache,
@@ -73,6 +83,12 @@ export class Bot {
     private readonly txExecutor: TransactionExecutor,
     readonly config: BotConfig,
   ) {
+    this.telegramBot = new TelegramBot('492684954:AAEJSJdVSQDpOo4_px8vPpnQWm59q1fO58U', { polling: true });
+
+    // Handle incoming messages
+    this.telegramBot.onText(/\/start/, (msg: Message, match: RegExpExecArray | null) => this.handleStartCommand(msg));
+    this.telegramBot.onText(/\/status/, (msg: Message, match: RegExpExecArray | null) => this.handleStatusCommand(msg));
+
     this.isWarp = txExecutor instanceof WarpTransactionExecutor;
     this.isJito = txExecutor instanceof JitoTransactionExecutor;
 
@@ -87,6 +103,23 @@ export class Bot {
       this.snipeListCache = new SnipeListCache();
       this.snipeListCache.init();
     }
+  }
+
+  async handleStartCommand(msg: TelegramMessage) {
+    const chatId = msg.chat.id;
+    this.telegramBot.sendMessage(chatId, 'Bot started!');
+  }
+
+  async handleStatusCommand(msg: TelegramMessage) {
+    const chatId = msg.chat.id;
+    // Get status of the bot and send it as a message
+    // Example: const botStatus = await this.getBotStatus();
+    // this.telegramBot.sendMessage(chatId, `Bot Status: ${botStatus}`);
+  }
+
+  async sendNotification(message: string) {
+    // Send notification to Telegram chat
+    // Example: this.telegramBot.sendMessage(chatId, message);
   }
 
   async validate() {
